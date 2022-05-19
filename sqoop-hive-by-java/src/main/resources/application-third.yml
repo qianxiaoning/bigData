@@ -1,0 +1,12 @@
+# hadoop参数
+hadoop:
+  hdfsUrl: hdfs://bigData101:8020
+  hadoopUser: shonqian
+
+# hive参数
+hive:
+  hiveDriverName: org.apache.hive.jdbc.HiveDriver
+  hiveUrl: jdbc:hive2://bigData101:10000/
+  hiveDatabase: default
+  hiveUser: shonqian
+  hivePassword:
