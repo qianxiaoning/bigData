@@ -5,6 +5,9 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.apache.commons.io.IOUtils;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -23,16 +26,23 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.api.java.io.jdbc.JDBCInputFormat;
+import org.apache.flink.api.java.operators.DataSource;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.types.Row;
 
 /**
  * JDBC 操作 Hive（注：JDBC 访问 Hive 前需要先启动HiveServer2）
  */
-public class HiveTest {
+public class MyFlinkTest {
 
     private static String driverName = "org.apache.hive.jdbc.HiveDriver";
     private static String url = "jdbc:hive2://192.168.30.117:10000/";
 //    private static String url = "jdbc:hive2://192.168.xx.xxx:10000/default";
-    private static String user = "shonqian";
+    private static String user = "shonqian1";
     private static String password = "";
 
     private static Connection conn = null;
@@ -41,20 +51,20 @@ public class HiveTest {
 
     // 加载驱动、创建连接
 //    @Before
-    public void init() throws Exception {
-        try {
-            // 创建hive驱动
-            Class.forName(driverName);
-            conn = DriverManager.getConnection(url,user,password);
-            stmt = conn.createStatement();
-            // windows环境给与权限
-            System.setProperty("HADOOP_USER_NAME","shonqian");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-    }
+//    public void init() throws Exception {
+//        try {
+//            // 创建hive驱动
+//            Class.forName(driverName);
+//            conn = DriverManager.getConnection(url,user,password);
+//            stmt = conn.createStatement();
+//            // windows环境给与权限
+//            System.setProperty("HADOOP_USER_NAME","shonqian1");
+//        } catch (ClassNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (SQLException throwables) {
+//            throwables.printStackTrace();
+//        }
+//    }
 
     // mysql2hdfs
     public void mysql2hdfs() {
@@ -413,25 +423,38 @@ public class HiveTest {
     }
 
     // 释放资源
-    @After
-    public void destory() throws Exception {
-        if ( rs != null) {
-            rs.close();
-        }
-        if (stmt != null) {
-            stmt.close();
-        }
-        if (conn != null) {
-            conn.close();
-        }
-    }
-
+//    @After
+//    public void destory() throws Exception {
+//        if ( rs != null) {
+//            rs.close();
+//        }
+//        if (stmt != null) {
+//            stmt.close();
+//        }
+//        if (conn != null) {
+//            conn.close();
+//        }
+//    }
     @Test
-    public void t1() throws Exception {
-        List<Object> a = null;
-        for (Object classInfo : a) {
-            System.out.println(1);
-        }
-    }
+    public void flinkBatchMysql() throws Exception {
+        JDBCInputFormat input = new JDBCInputFormat.JDBCInputFormatBuilder()
+                .setDrivername("com.mysql.cj.jdbc.Driver")
+                .setDBUrl("jdbc:mysql://localhost:3306/pra?user=root&password=root")
+                .setQuery("select * from emp")
+                //设置获取的数据的类型
+                .setRowTypeInfo(new RowTypeInfo(BasicTypeInfo.INT_TYPE_INFO, BasicTypeInfo.INT_TYPE_INFO))
+                .finish();
 
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        DataSource<Row> input1 = env.createInput(input);
+
+        input1.map(new MapFunction<Row, String>() {
+            @Override
+            public String map(Row row) throws Exception {
+                return row.toString();
+            }
+        }).print();
+        //离线批处理的print(),count(),collect()等都具有execute()的功能。即如果使用了这些就不需要提交execute()了
+        //如果是流处理则必须提交execute()
+    }
 }

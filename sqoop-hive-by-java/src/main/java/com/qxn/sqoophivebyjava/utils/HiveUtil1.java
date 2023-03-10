@@ -5,16 +5,12 @@ import org.apache.sqoop.Sqoop;
 import org.apache.sqoop.util.OptionsFileUtil;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * <简述> hive工具类
  * <详细描述> hiveUtil
  */
-public class HiveUtil {
+public class HiveUtil1 {
     // hadoop参数
     private static String hdfsUrl = PropertiesUtil.prop("hadoop.hdfsUrl");
     private static String hadoopUser = PropertiesUtil.prop("hadoop.hadoopUser");
@@ -45,82 +41,11 @@ public class HiveUtil {
         }
     }
 
-    /**
-     * <简述> 删除hive表
-     * <详细描述>
-     * @param tableName hive表名
-     * @return void
-     */
-    public static void dropTable(String tableName) {
-        try {
-            hiveInit();
-            String sql = "drop table if exists " + tableName;
-            stmt.execute(sql);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } finally {
-            hiveDestory();
-        }
-    }
-
-    // 查看表结构
-    public static List<Map<String, String>> descTable(String hiveTableName) {
-        List<Map<String, String>> fieldList = new ArrayList<>();
-        try {
-            hiveInit();
-            String sql = "desc " + hiveTableName;
-//        System.out.println("Running: " + sql);
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-                Map<String, String> fieldMap = new HashMap<>();
-                fieldMap.put("name", rs.getString(1));
-                fieldMap.put("type", rs.getString(2));
-                fieldList.add(fieldMap);
-            }
-//            System.out.println(fieldList);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } finally {
-            hiveDestory();
-        }
-        return fieldList;
-    }
-
-    // 查询表是否存在
-    public static Boolean seeTableIfExist(String hiveTableName) {
-        try {
-            hiveInit();
-            String sql = "show tables like '" + hiveTableName + "'";
-            rs = stmt.executeQuery(sql);
-            while (rs.next()) {
-//            System.out.println(rs.getString(1));
-                return true;
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } finally {
-            hiveDestory();
-        }
-        return false;
-    }
-
-    // 改变表结构
-    public static void alterTable(String sql) {
-        try {
-            hiveInit();
-//            System.out.println("Running: " + sql);
-            stmt.execute(sql);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } finally {
-            hiveDestory();
-        }
-    }
-
     // mysqlStructure2hive
     public static void mysqlStructure2hive(String databaseUrl, String account, String password,
                                            String tablename, String hiveTablename) {
         try {
+            hiveInit();
             String[] args = new String[]{
                     "create-hive-table",
                     "--connect", "jdbc:mysql://" + databaseUrl + "?serverTimezone=Asia/Shanghai",
@@ -137,45 +62,18 @@ public class HiveUtil {
             Sqoop.runTool(expandArguments, conf);
         } catch (Exception e) {
             e.printStackTrace();
-        }
-    }
-
-    // 复制hive表
-    public static void copyHiveTable(String hiveTablename, String newHiveTablename) {
-        try {
-            hiveInit();
-            String sql =
-                    "create table if not exists " + newHiveTablename + " as select * from " + hiveTablename;
-//            System.out.println("Running: " + sql);
-            stmt.execute(sql);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
         } finally {
             hiveDestory();
         }
     }
 
-    // 查找已有hive表指定字段到新表
-    public static void copyMappingFields2Hive(String hiveTablenames, String newHiveTablename, String fields) {
+    // 复制hive表结构
+    public static void copyHiveStructure(String hiveTablename, String newHiveTablename) {
         try {
             hiveInit();
-            // 效果idMappings = "a a,b b";
             String sql =
-                    "create table if not exists " + newHiveTablename + " as select " + fields + " from " + hiveTablenames;
+                    "create table " + newHiveTablename + " as select * from " + hiveTablename;
 //            System.out.println("Running: " + sql);
-            stmt.execute(sql);
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        } finally {
-            hiveDestory();
-        }
-    }
-
-    // hive表插入数据
-    public static void insertData(String tableName, String originalSql) {
-        try {
-            hiveInit();
-            String sql = "insert into table " + tableName + " " + originalSql;
             stmt.execute(sql);
         } catch (SQLException throwables) {
             throwables.printStackTrace();
